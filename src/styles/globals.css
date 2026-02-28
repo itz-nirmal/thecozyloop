@@ -1,0 +1,157 @@
+@import url('https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,200..800&display=swap');
+@import "tailwindcss";
+
+/* ============================================
+   Extended Responsive Breakpoints
+   ============================================ */
+
+/* Tablet breakpoints (iPad, iPad Mini, iPad Pro) */
+/* Small tablet: 640px - 767px (using sm) */
+/* Medium tablet: 768px - 1023px */
+/* Large tablet: 1024px - 1279px (overlaps with lg) */
+
+/* Responsive spacing utilities for tablets */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .tablet\:px-6 {
+    padding-left: 1.5rem;
+    padding-right: 1.5rem;
+  }
+  
+  .tablet\:px-8 {
+    padding-left: 2rem;
+    padding-right: 2rem;
+  }
+  
+  .tablet\:gap-6 {
+    gap: 1.5rem;
+  }
+  
+  .tablet\:gap-8 {
+    gap: 2rem;
+  }
+}
+
+/* Smooth responsive transitions */
+* {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Responsive typography scale */
+@media (min-width: 1280px) {
+  html {
+    font-size: 16px;
+  }
+}
+
+@media (min-width: 1536px) {
+  html {
+    font-size: 17px;
+  }
+}
+
+@media (min-width: 1920px) {
+  html {
+    font-size: 18px;
+  }
+}
+
+/* Prevent horizontal scroll on all devices */
+html, body {
+  overflow-x: hidden;
+  max-width: 100vw;
+}
+
+/* ============================================
+   Header logo padding */
+header a[href="/"] {
+  padding-left: 1rem;
+}
+
+/* Continuous traveling highlight around border */
+@keyframes border-travel {
+  0% {
+    background-position: 0% 0%;
+  }
+  100% {
+    background-position: 200% 0%;
+  }
+}
+
+.search-travel-border {
+  position: relative;
+  border: none !important;
+  background-image: 
+    linear-gradient(#FFF8E7, #FFF8E7),
+    linear-gradient(90deg, transparent 0%, #722F37 50%, transparent 100%);
+  background-origin: border-box;
+  background-clip: padding-box, border-box;
+  background-size: 100% 100%, 200% 4px;
+  background-repeat: no-repeat, repeat-y;
+  border-radius: 9999px;
+  animation: border-travel 2s linear infinite;
+  box-shadow: inset 0 0 0 2px #1A1110;
+}
+
+/* Traveling highlight border effect */
+@keyframes traveling-highlight {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: 0% 0;
+  }
+}
+
+.search-moving-border {
+  position: relative;
+  background: #FFF8E7;
+  border-radius: 9999px;
+}
+
+.search-moving-border::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 9999px;
+  padding: 2px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    #722F37,
+    #1A1110,
+    #722F37,
+    transparent
+  );
+  background-size: 200% 100%;
+  -webkit-mask: 
+    linear-gradient(#fff 0 0) content-box, 
+    linear-gradient(#fff 0 0);
+  mask: 
+    linear-gradient(#fff 0 0) content-box, 
+    linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  animation: traveling-highlight 2s linear infinite;
+}
+
+.search-moving-border input {
+  position: relative;
+  z-index: 1;
+  background: transparent;
+  border: none;
+}
+
+/* Typing animation for search placeholder */
+@keyframes blink-caret {
+  from, to { border-color: transparent }
+  50% { border-color: #1A1110 }
+}
+
+.typing-text {
+  display: inline;
+  border-right: 2px solid #1A1110;
+  animation: blink-caret 0.75s step-end infinite;
+  white-space: nowrap;
+  overflow: hidden;
+}
