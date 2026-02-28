@@ -2,6 +2,8 @@ import "~/styles/globals.css";
 
 import { type Metadata, type Viewport } from "next";
 import { Geist, Bricolage_Grotesque } from "next/font/google";
+import { SpeedInsights } from "@vercel/speed-insights/next";
+import { Analytics } from "@vercel/analytics/next";
 
 import { TRPCReactProvider } from "~/trpc/react";
 import TCLFavicon from "../../assets/Brand Assets/TCL logo loop.png";
@@ -41,6 +43,8 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${geist.variable} ${brSonoma.variable}`}>
       <body>
+        <SpeedInsights />
+        <Analytics />
         <TRPCReactProvider>{children}</TRPCReactProvider>
         <FomoPopup enabled={true} maxNotifications={7} />
       </body>
