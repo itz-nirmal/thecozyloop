@@ -53,3 +53,8 @@ generated/prisma/*.json
 .next/
 dist/
 build/
+
+#Custon Add
+/.qodo
+/.zencoder
+/.zenflow
