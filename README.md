@@ -540,7 +540,3 @@ This project is private and proprietary. All rights reserved.
 For issues and questions, please open an issue on the project repository.
 
 ---
-
-<p align="center">
-  Made with ❤️ by The Cozy Loop
-</p>
