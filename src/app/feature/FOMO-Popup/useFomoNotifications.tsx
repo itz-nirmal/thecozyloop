@@ -3,6 +3,9 @@
 import { useEffect, useRef, useCallback } from "react";
 import { toast } from "react-toastify";
 
+// LocalStorage key for persisting FOMO notification state
+const STORAGE_KEY = "fomo_notification_state";
+
 // Indian names list (30+ realistic names)
 const INDIAN_NAMES = [
   "Rahul Sharma",
@@ -64,11 +67,32 @@ const PRODUCTS = [
 ];
 
 // Exponential backoff delays in milliseconds
-// 5s, 15s, 45s, 90s (1.5min), 270s (4.5min), 810s (13.5min), 2430s (40.5min)
-const DELAY_SEQUENCE = [5000, 15000, 45000, 90000, 270000, 810000, 2430000];
+// 5s, 15s, 45s, 135s, 405s, 1215s, 3645s, 10935s, 32805s, ... (multiply by 3 each time)
+const DELAY_SEQUENCE = [
+  5000,      // 1st: 5 sec
+  15000,     // 2nd: 15 sec
+  45000,     // 3rd: 45 sec
+  135000,    // 4th: 135 sec (2.25 min)
+  405000,    // 5th: 405 sec (6.75 min)
+  1215000,   // 6th: 1215 sec (20.25 min)
+  3645000,   // 7th: 3645 sec (60.75 min)
+  10935000,  // 8th: 10935 sec (182.25 min)
+  32805000,  // 9th: 32805 sec (546.75 min)
+  98415000,  // 10th: 98415 sec (1640.25 min)
+  295245000, // 11th: 295245 sec
+  885735000, // 12th: 885735 sec
+  2657205000,// 13th: 2657205 sec
+  7971615000,// 14th: 7971615 sec
+  23914845000, // 15th: 23914845 sec
+  71744535000, // 16th: 71744535 sec
+  215233605000, // 17th: 215233605 sec
+  645700815000, // 18th: 645700815 sec
+  1937102445000, // 19th: 1937102445 sec
+  5811307335000, // 20th: 5811307335 sec
+];
 
 // Maximum number of notifications to show
-const MAX_NOTIFICATIONS = 7;
+const MAX_NOTIFICATIONS = 20;
 
 // Get random item from array
 const getRandomItem = <T,>(arr: T[]): T => {
@@ -106,7 +130,7 @@ export interface UseFomoNotificationsReturn {
 
 /**
  * Custom hook for managing FOMO (Fear Of Missing Out) notifications
- * with exponential backoff timing pattern
+ * with exponential backoff timing pattern and persistent state
  */
 export const useFomoNotifications = (
   options: UseFomoNotificationsOptions = {}
@@ -118,6 +142,43 @@ export const useFomoNotifications = (
   const delayIndexRef = useRef(0);
   const isRunningRef = useRef(false);
   const isMountedRef = useRef(true);
+
+  // Load persisted state from localStorage
+  const loadPersistedState = useCallback((): { notificationCount: number; delayIndex: number; lastShownTimestamp: number | null } => {
+    if (typeof window === "undefined") {
+      return { notificationCount: 0, delayIndex: 0, lastShownTimestamp: null };
+    }
+    
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        const parsed = JSON.parse(stored) as { notificationCount?: number; delayIndex?: number; lastShownTimestamp?: number };
+        return {
+          notificationCount: parsed.notificationCount ?? 0,
+          delayIndex: parsed.delayIndex ?? 0,
+          lastShownTimestamp: parsed.lastShownTimestamp ?? null,
+        };
+      }
+    } catch (e) {
+      console.warn("Failed to load FOMO state from localStorage:", e);
+    }
+    return { notificationCount: 0, delayIndex: 0, lastShownTimestamp: null };
+  }, []);
+
+  // Save state to localStorage
+  const savePersistedState = useCallback((notificationCount: number, delayIndex: number) => {
+    if (typeof window === "undefined") return;
+    
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify({
+        notificationCount,
+        delayIndex,
+        lastShownTimestamp: Date.now(),
+      }));
+    } catch (e) {
+      console.warn("Failed to save FOMO state to localStorage:", e);
+    }
+  }, []);
 
   // Generate random FOMO notification data
   const generateNotification = useCallback((): FomoNotification => {
@@ -209,11 +270,14 @@ export const useFomoNotifications = (
       const notification = generateNotification();
       showNotification(notification);
       notificationCountRef.current++;
+      
+      // Persist the state
+      savePersistedState(notificationCountRef.current, delayIndexRef.current);
 
       // Schedule next one
       scheduleNextNotification();
     }, delay);
-  }, [enabled, maxNotifications, generateNotification, showNotification]);
+  }, [enabled, maxNotifications, generateNotification, showNotification, savePersistedState]);
 
   // Initialize and manage the notification schedule
   useEffect(() => {
@@ -223,22 +287,47 @@ export const useFomoNotifications = (
       return;
     }
 
-    // Reset counters on mount
-    notificationCountRef.current = 0;
-    delayIndexRef.current = 0;
+    // Load persisted state instead of resetting
+    const persistedState = loadPersistedState();
+    notificationCountRef.current = persistedState.notificationCount;
+    delayIndexRef.current = persistedState.delayIndex;
+    
+    // If we've already shown all notifications, don't show more
+    if (notificationCountRef.current >= maxNotifications) {
+      isRunningRef.current = false;
+      return;
+    }
+    
     isRunningRef.current = true;
 
-    // Show first notification after initial delay (5 seconds)
+    // Calculate delay based on when the last notification was shown
+    let initialDelay = DELAY_SEQUENCE[delayIndexRef.current] ?? DELAY_SEQUENCE[0];
+    
+    if (persistedState.lastShownTimestamp) {
+      const timeSinceLastNotification = Date.now() - persistedState.lastShownTimestamp;
+      // If enough time has passed since last notification, show immediately
+      // Otherwise, wait for the remaining time
+      if (initialDelay !== undefined && timeSinceLastNotification >= initialDelay) {
+        initialDelay = 0;
+      } else if (initialDelay !== undefined) {
+        initialDelay = initialDelay - timeSinceLastNotification;
+      }
+    }
+
+    // Show first notification after calculated delay
     timeoutRef.current = setTimeout(() => {
       if (!isMountedRef.current || !enabled) return;
 
       const notification = generateNotification();
       showNotification(notification);
       notificationCountRef.current++;
+      
+      // Persist the state
+      savePersistedState(notificationCountRef.current, delayIndexRef.current);
 
       // Schedule subsequent notifications
       scheduleNextNotification();
-    }, DELAY_SEQUENCE[0]);
+    }, initialDelay);
 
     // Cleanup on unmount
     return () => {
@@ -248,7 +337,7 @@ export const useFomoNotifications = (
       }
       isRunningRef.current = false;
     };
-  }, [enabled, generateNotification, showNotification, scheduleNextNotification]);
+  }, [enabled, generateNotification, showNotification, scheduleNextNotification, loadPersistedState, savePersistedState, maxNotifications]);
 
   return {
     showNotification,

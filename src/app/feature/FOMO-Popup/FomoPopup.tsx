@@ -15,7 +15,7 @@ export interface FomoPopupProps {
 
   /**
    * Maximum number of notifications to show
-   * @default 7
+   * @default 20
    */
   maxNotifications?: number;
 
@@ -34,12 +34,12 @@ export interface FomoPopupProps {
  * 
  * @example
  * ```tsx
- * <FomoPopup enabled={true} maxNotifications={7} />
+ * <FomoPopup enabled={true} maxNotifications={20} />
  * ```
  */
 export const FomoPopup = ({
   enabled = true,
-  maxNotifications = 7,
+  maxNotifications = 20,
 }: FomoPopupProps) => {
   const [isClient, setIsClient] = useState(false);
 

@@ -46,7 +46,7 @@ export default function RootLayout({
         <SpeedInsights />
         <Analytics />
         <TRPCReactProvider>{children}</TRPCReactProvider>
-        <FomoPopup enabled={true} maxNotifications={7} />
+        <FomoPopup enabled={true} maxNotifications={20} />
       </body>
     </html>
   );
